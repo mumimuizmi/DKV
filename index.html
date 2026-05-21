@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Dasar DKV & Sistem Informasi</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4f46e5;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .quiz-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .question-num {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: #4f46e5;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .question-text {
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            line-height: 1.4;
+            background-color: #fff;
+        }
+
+        .option:hover {
+            background-color: #f9fafb;
+            border-color: #cbd5e1;
+        }
+
+        /* State ketika card sudah dijawab (disabled) */
+        .quiz-card.answered .option {
+            pointer-events: none; /* Kunci pilihan agar tidak bisa diklik lagi */
+        }
+
+        /* Warna Jawaban */
+        .option.correct {
+            background-color: #ecfdf5 !important;
+            border-color: var(--success-color) !important;
+            color: #065f46;
+            font-weight: 600;
+        }
+
+        .option.wrong {
+            background-color: #fef2f2 !important;
+            border-color: var(--danger-color) !important;
+            color: #991b1b;
+        }
+
+        /* Penanda opsi yang seharusnya benar jika user salah pilih */
+        .option.should-be {
+            border-color: var(--success-color);
+            border-style: dashed;
+            background-color: #f0fdf4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Kuis Mandiri: Dasar DKV & Sistem Informasi</h1>
+        <div class="score-board">
+            <div>Benar: <span id="correct-count">0</span></div>
+            <div>Salah: <span id="wrong-count">0</span></div>
+            <div>Progres: <span id="progress-count">0</span>/22</div>
+        </div>
+    </header>
+
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // Data Soal Lengkap beserta Kunci Jawabannya
+    const quizData = [
+        {
+            q: "Prinsip desain yang memastikan elemen tidak terasa berat pada salah satu sisi tampilan disebut …",
+            o: [
+                "Penggunaan warna yang sama pada semua elemen agar terlihat seragam",
+                "Pengaturan elemen agar memiliki distribusi visual yang merata di seluruh bidang desain",
+                "Penempatan objek utama di bagian tengah tanpa mempertimbangkan elemen lain",
+                "Penggunaan teks dalam jumlah banyak untuk mengisi seluruh ruang kosong",
+                "Penyusunan elemen secara acak agar terlihat dinamis dan tidak monoton"
+            ],
+            a: 1
+        },
+        {
+            q: "Keseimbangan simetris dalam desain berarti …",
+            o: [
+                "Pembagian elemen kiri dan kanan dengan ukuran serta bentuk yang relatif sama",
+                "Penyusunan elemen secara acak tanpa memperhatikan posisi kiri dan kanan",
+                "Penempatan objek hanya pada satu sisi untuk menciptakan kontras visual",
+                "Penggunaan warna berbeda pada setiap bagian untuk menambah variasi",
+                "Penempatan teks secara bebas tanpa mengikuti garis tengah bidang desain"
+            ],
+            a: 0
+        },
+        {
+            q: "Dalam pembuatan tampilan aplikasi web, prinsip keseimbangan (balance) digunakan agar …",
+            o: [
+                "Semua komponen antarmuka memiliki warna yang seragam seluruhnya",
+                "Setiap elemen grafis ditempatkan secara acak tanpa perbandingan",
+                "Semua teks diletakkan di tengah halaman untuk kesan simetris",
+                "Elemen antar sisi halaman terlihat seimbang dan tidak berat sebelah",
+                "Gambar dan teks diatur tanpa memperhatikan arah penempatan"
+            ],
+            a: 3
+        },
+        {
+            q: "Dalam desain komunikasi visual, “balance” penting agar karya terlihat …",
+            o: [
+                "Asimetris dan berat sebelah",
+                "Gelap dan misterius",
+                "Dinamis dan stabil",
+                "Ramai dan padat",
+                "Kontras dan berlebihan"
+            ],
+            a: 2
+        },
+        {
+            q: "Keseimbangan radial umumnya digunakan pada desain yang …",
+            o: [
+                "Menyusun elemen secara horizontal dari kiri ke kanan secara berurutan",
+                "Menempatkan objek utama di bagian atas dengan teks di bagian bawah",
+                "Memusatkan elemen di tengah dengan susunan melingkar di sekitarnya",
+                "Menggunakan garis diagonal untuk menciptakan kesan dinamis",
+                "Mengatur warna secara acak untuk menciptakan variasi visual"
+            ],
+            a: 2
+        },
+        {
+            q: "Dalam desain logo, prinsip kesederhanaan penting agar logo …",
+            o: [
+                "Mudah dikenali dan diingat",
+                "Rumit dan detail",
+                "Sulit dibaca",
+                "Menarik hanya di layar besar",
+                "Tidak bisa dicetak"
+            ],
+            a: 0
+        },
+        {
+            q: "Penggunaan terlalu banyak font akan menyebabkan …",
+            o: [
+                "Desain terlihat lebih profesional karena memiliki variasi teks",
+                "Komposisi menjadi lebih seimbang secara visual",
+                "Tampilan menjadi lebih sederhana dan minimalis",
+                "Pesan menjadi lebih mudah dipahami oleh audiens",
+                "Tampilan menjadi tidak konsisten dan sulit dibaca oleh pengguna"
+            ],
+            a: 4
+        },
+        {
+            q: "Dalam prinsip kesederhanaan, jumlah jenis huruf ideal adalah …",
+            o: [
+                "1",
+                "2–3",
+                "4",
+                "5",
+                "Tak terbatas"
+            ],
+            a: 1
+        },
+        {
+            q: "Seorang siswa RPL menerapkan white space (ruang kosong) pada tampilan form login. Tujuannya adalah …",
+            o: [
+                "Membuat tampilan bersih, fokus pada input utama, dan mudah dibaca pengguna.",
+                "Menyembunyikan sebagian teks agar tampilan tampak lebih sederhana.",
+                "Menghapus sebagian elemen untuk menghemat ruang penyimpanan file.",
+                "Memberi efek transisi agar halaman terlihat lebih interaktif dan unik.",
+                "Memperbanyak elemen grafis agar form login terlihat lebih menarik."
+            ],
+            a: 0
+        },
+        {
+            q: "Desain yang tidak memiliki kesatuan biasanya akan terlihat …",
+            o: [
+                "Sangat menarik karena memiliki banyak variasi bentuk dan warna",
+                "Seimbang karena semua elemen memiliki ukuran yang sama",
+                "Tidak teratur karena elemen tidak saling mendukung satu sama lain",
+                "Dinamis karena elemen disusun secara acak di seluruh bidang",
+                "Sederhana karena tidak banyak elemen yang digunakan"
+            ],
+            a: 2
+        },
+        {
+            q: "Golden Ratio adalah …",
+            o: [
+                "Teknik pewarnaan dalam desain grafis modern",
+                "Metode penulisan teks dalam desain komunikasi visual",
+                "Perbandingan matematis sekitar 1,618 yang digunakan untuk menciptakan harmoni visual",
+                "Cara mengatur animasi dalam aplikasi berbasis web",
+                "Teknik penggabungan gambar dalam satu komposisi visual"
+            ],
+            a: 2
+        },
+        {
+            q: "Golden Ratio tidak bersifat wajib dalam desain karena …",
+            o: [
+                "Tidak memiliki hubungan dengan estetika dalam dunia desain grafis",
+                "Hanya berfungsi sebagai panduan untuk membantu menciptakan komposisi visual",
+                "Tidak pernah digunakan oleh desainer profesional dalam praktik nyata",
+                "Hanya berlaku pada desain tradisional dan bukan desain digital modern",
+                "Tidak dapat diterapkan dalam pembuatan desain berbasis aplikasi"
+            ],
+            a: 1
+        },
+        {
+            q: "Dalam sebuah aplikasi, tombol utama sebaiknya dibuat lebih menonjol agar …",
+            o: [
+                "Semua elemen terlihat memiliki fungsi yang sama",
+                "Tampilan menjadi lebih penuh dengan elemen visual",
+                "Pengguna harus mencari sendiri fungsi yang tersedia",
+                "Dengan mudah menemukan fungsi yang paling penting",
+                "Desain terlihat lebih sederhana tanpa adanya fokus"
+            ],
+            a: 3
+        },
+        {
+            q: "Apa yang dimaksud dengan design brief dalam proses desain?",
+            o: [
+                "Dokumen untuk menyimpan hasil desain",
+                "Dokumen berisi detail proyek desain",
+                "Aplikasi untuk membuat desain UI",
+                "Template warna dalam desain",
+                "Software editing gambar"
+            ],
+            a: 1
+        },
+        {
+            q: "Apa yang dimaksud dengan target audience dalam design brief?",
+            o: [
+                "Orang yang membuat desain",
+                "Orang yang akan menggunakan desain",
+                "Orang yang membeli software",
+                "Orang yang menjual desain",
+                "Orang yang mencetak desain"
+            ],
+            a: 1
+        },
+        {
+            q: "Apa yang terjadi jika tidak menggunakan design brief?",
+            o: [
+                "Desain lebih cepat selesai",
+                "Tidak perlu revisi",
+                "Proyek tidak sesuai tujuan",
+                "Desain lebih bagus",
+                "Tidak ada pengaruh"
+            ],
+            a: 2
+        },
+        {
+            q: "Apa fungsi layout dalam desain?",
+            o: [
+                "Menyimpan file",
+                "Mengatur posisi elemen",
+                "Menghapus desain",
+                "Menentukan harga",
+                "Menentukan software"
+            ],
+            a: 1
+        },
+        {
+            q: "Perbedaan wireframe dan mockup adalah…",
+            o: [
+                "Wireframe lebih detail",
+                "Mockup lebih visual dan berwarna",
+                "Wireframe berwarna",
+                "Mockup tanpa desain",
+                "Tidak ada perbedaan"
+            ],
+            a: 1
+        },
+        {
+            q: "Apa fungsi components di Figma?",
+            o: [
+                "Menyimpan gambar",
+                "Membuat elemen reusable",
+                "Menghapus file",
+                "Menentukan warna",
+                "Mengatur export"
+            ],
+            a: 1
+        },
+        {
+            q: "Apa fungsi auto layout di Figma?",
+            o: [
+                "Mengatur layout otomatis",
+                "Menghapus objek",
+                "Menentukan warna",
+                "Menyimpa file",
+                "Mengunci layer"
+            ],
+            a: 0
+        },
+        {
+            q: "Mengapa responsive design penting?",
+            o: [
+                "Agar desain berat",
+                "Agar tampil baik di berbagai device",
+                "Agar cepat dibuat",
+                "Agar murah",
+                "Agar tidak perlu testing"
+            ],
+            a: 1
+        },
+        {
+            q: "Apa langkah terakhir dalam proses design brief?",
+            o: [
+                "Menentukan warna",
+                "Membuat wireframe",
+                "Evaluasi dan revisi",
+                "Membeli laptop",
+                "Menghapus file"
+            ],
+            a: 2
+        },
+        {
+            q: "Mengapa pencarian data pada sistem manual menjadi sulit?",
+            o: [
+                "Data tersimpan dalam sistem database yang kompleks",
+                "Data harus dicari dari banyak dokumen atau catatan",
+                "Data sudah tersusun rapi dalam sistem digital modern",
+                "Data dapat diakses melalui aplikasi berbasis cloud",
+                "Data sudah terintegrasi dengan sistem otomatis"
+            ],
+            a: 1
+        },
+        {
+            q: "Secara keseluruhan, solusi dari masalah manual adalah…",
+            o: [
+                "Menambah jumlah dokumen fisik dalam sistem",
+                "Menggunakan aplikasi digital untuk pengelolaan",
+                "Mengurangi jumlah pengguna dalam sistem",
+                "Menghapus seluruh data yang ada",
+                "Membatasi akses pengguna terhadap sistem"
+            ],
+            a: 1
+        },
+        {
+            q: "Desain Footer dalam website berisi…",
+            o: [
+                "Menampilkan data utama pengguna aplikasi",
+                "Menyediakan informasi tambahan seperti kontak",
+                "Mengatur warna dan font desain aplikasi",
+                "Menyimpan data pengguna dalam sistem",
+                "Menampilkan laporan keuangan hotel"
+            ],
+            a: 1
+        }
+    ];
+
+    let correctScore = 0;
+    let wrongScore = 0;
+    let answeredCount = 0;
+
+    const container = document.getElementById('quiz-container');
+
+    // Fungsi Render Card Soal
+    function loadQuiz() {
+        quizData.forEach((item, qIndex) => {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            card.id = `card-${qIndex}`;
+
+            const qNum = document.createElement('div');
+            qNum.className = 'question-num';
+            qNum.innerText = `Soal ${qIndex + 1}`;
+
+            const qText = document.createElement('div');
+            qText.className = 'question-text';
+            qText.innerText = item.q;
+
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'options-container';
+
+            item.o.forEach((optionText, oIndex) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.innerText = optionText;
+                
+                // Tambah event klik untuk koreksi instan
+                optionEl.onclick = () => checkAnswer(qIndex, oIndex, item.a);
+                
+                optionsContainer.appendChild(optionEl);
+            });
+
+            card.appendChild(qNum);
+            card.appendChild(qText);
+            card.appendChild(optionsContainer);
+            container.appendChild(card);
+        });
+        
+        document.getElementById('progress-count').innerText = quizData.length;
+    }
+
+    // Fungsi Koreksi Langsung
+    function checkAnswer(questionIndex, selectedIndex, correctIndex) {
+        const card = document.getElementById(`card-${questionIndex}`);
+        
+        // Cek apakah soal ini sudah pernah dijawab sebelumnya
+        if (card.classList.contains('answered')) return;
+        
+        card.classList.add('answered');
+        const options = card.querySelectorAll('.option');
+
+        if (selectedIndex === correctIndex) {
+            // Jika benar
+            options[selectedIndex].classList.add('correct');
+            correctScore++;
+            document.getElementById('correct-count').innerText = correctScore;
+        } else {
+            // Jika salah
+            options[selectedIndex].classList.add('wrong');
+            options[correctIndex].classList.add('should-be'); // tandai jawaban yang seharusnya benar
+            wrongScore++;
+            document.getElementById('wrong-count').innerText = wrongScore;
+        }
+        
+        answeredCount++;
+        // Update progres pengerjaan saat ini
+        document.getElementById('progress-count').innerText = `${answeredCount} / ${quizData.length}`;
+    }
+
+    // Jalankan aplikasi kuis saat file dibuka
+    loadQuiz();
+</script>
+
+</body>
+</html>
